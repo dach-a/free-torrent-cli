@@ -1,0 +1,28 @@
+{
+  "name": "free-torrent-cli",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Simple command line torrent client for free torrent sites built with Node.js",
+  "bin": {
+    "free-torrent-cli": "./index.js"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "bencode": "^4.0.0",
+    "fs": "^0.0.1-security"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dach-a/free-torrent-cli.git"
+  },
+  "keywords": [],
+  "author": "dach-a",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/dach-a/free-torrent-cli/issues"
+  },
+  "homepage": "https://github.com/dach-a/free-torrent-cli#readme"
+}
