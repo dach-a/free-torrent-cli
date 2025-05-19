@@ -1,17 +1,9 @@
 import fs from 'fs';
 import bencode from 'bencode';
+import { getPeers } from './src/tracker.js';
 
-const readTorrent = (filePath) => {
-    try {
-        const torrentData = fs.readFileSync(filePath);
-        return bencode.decode(torrentData);
-    } catch (error) {
-        console.error('Error reading or decoding torrent file:', error.message);
-        process.exit(1);
-    }
-}
+const torrent = bencode.decode(fs.readFileSync('puppy.torrent'));
 
-const torrent = readTorrent('puppy.torrent');
-console.log('Announce URL:', torrent.announce.toString('utf8'));
-
-
+getPeers( torrent, peers => {
+    console.log('list of peers: ', peers);
+})
