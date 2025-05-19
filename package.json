@@ -9,7 +9,9 @@
   "main": "index.js",
   "dependencies": {
     "bencode": "^4.0.0",
-    "fs": "^0.0.1-security"
+    "crypto": "^1.0.1",
+    "fs": "^0.0.1-security",
+    "url-parse": "^1.5.10"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
