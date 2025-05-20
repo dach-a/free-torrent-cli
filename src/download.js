@@ -1,7 +1,7 @@
 import net from 'net';
 import { Buffer } from 'buffer';
 import { getPeers } from './tracker.js';
-import { buildHandshake, buildInterested } from './Message.js';
+import { buildHandshake, buildInterested, parse } from './Message.js';
 
 export default (torrent) => {
     getPeers(torrent, peers => {
@@ -39,9 +39,35 @@ const onWholeMsg = (socket, callback) => {
     });
 }
 const msgHandler = (msg, socket) => {
-    if(isHandshake(msg)) socket.write(buildInterested());
+    if(isHandshake(msg)) {
+        // send interested message
+        socket.write(buildInterested());
+    }else {
+        const m = parse(msg);
+
+        if(m.id === 0) chokeHandler();
+        if(m.id === 1) unChokeHandler();
+        if(m.id === 4) haveHandler(m.payload);
+        if(m.id === 5) bitfieldHandler(m.payload);
+        if(m.id === 7) pieceHandler(m.payload);
+    }
 }
 const isHandshake = msg => {
     return msg.length === msg.readUInt8(0) + 49 &&
         msg.toString('utf8', 1) === 'BitTorrent protocol';
+}
+const chokeHandler = () => {
+    console.log('choke');
+}
+const unChokeHandler = () => {
+    console.log('unChoke');
+}
+const haveHandler = payload => {
+    console.log('have', payload);
+}
+const bitfieldHandler = payload => {
+    console.log('bitfield', payload);
+}
+const pieceHandler = payload => {
+    console.log('piece', payload);
 }
