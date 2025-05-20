@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { getInfoHash, size } from './TorrentParser.js';
 import { generatePeerId } from './util.js';
 
-export function getPeers (torrent, callback) {
+export function getPeers (torrent, clientPort, callback) {
     const socket = dgram.createSocket('udp4');
     const url = torrent.announce.toString('utf8');
 
@@ -18,7 +18,7 @@ export function getPeers (torrent, callback) {
             // receive and parse the connect response
             const connResp = parseConnResp(response);
             // send announce request
-            const announceReq = buildAnnounceReq(connResp.connectionId, torrent);
+            const announceReq = buildAnnounceReq(connResp.connectionId, torrent, clientPort);
             udpSend(socket, announceReq, url);
         }else if (respType(response) === 'announce') {
             // parse the announce response
@@ -62,11 +62,17 @@ export function parseConnResp (resp) {
     return {
         action: resp.readUInt32BE(0),
         transactionId: resp.readUInt32BE(4),
-        connectionId: resp.splice(8)
+        connectionId: resp.subarray(8)
     }
 }
 
 export function buildAnnounceReq (connId, torrent, port=6881) {
+    // initiate port validation
+    if(typeof port !== 'number' || port <= 0 || port >= 65536) {
+        throw new Error(`Invalid client port assigned: ${port}. Switching to default port 6881`);
+        port = 6881; // fallback to default
+    }
+
     const buffer = Buffer.allocUnsafe(98);
 
     // get the connection id
@@ -104,7 +110,7 @@ export function buildAnnounceReq (connId, torrent, port=6881) {
     // get the port
     buffer.writeUInt16BE(port, 96);
     return buffer;
-}
+};
 
 export function parseAnnounceResp (resp) {
     // parse announce response from peer group
@@ -123,10 +129,13 @@ export function parseAnnounceResp (resp) {
         leechers: resp.readUInt32BE(8),
         seeders: resp.readUInt32BE(12),
         peers: group(resp.slice(20), 6).map(address => {
+            if(!address || address.length < 6) return null; // skip invalid peer
+            const port = address.readUInt16BE(4);
+            if(port <= 0 || port >= 65536) return null; // skip invalid peer
             return {
                 ip: address.slice(0, 4).join('.'),
-                port: address.readUInt16BE(4)
+                port: port
             }
-        })
+        }).filter(Boolean) // remove invalid peers
     }
 }

@@ -1,30 +1,37 @@
 import net from 'net';
-import { getPeers } from './tracker.js';
+import { getPeers, buildAnnounceReq } from './tracker.js';
 import { buildHandshake, buildInterested, buildRequest, parseMessage } from './Message.js';
 import Pieces from './Pieces.js';
 
 export default async function download(torrent){
-    // const requestedPieces = [];
     try {
         // get peers from tracker
-        const peers = await new Promise((resolve, reject) => getPeers(torrent, (peers, err) => err ?  reject(err) : resolve(peers)));
+        const peers = await new Promise((resolve, reject) => getPeers(torrent, CLIENT_PORT, (peers, err) => err ?  reject(err) : resolve(peers)));
+
         // get the message pieces from torrent
         const pieces = new Pieces(torrent.info.pieces.length / 20);
         const MAX_CONCURRENT_CONNECTIONS = 5;
+        let CLIENT_PORT = 6881;
 
         // create connection pool
         peers.slice(0, MAX_CONCURRENT_CONNECTIONS).forEach(peer => 
-            connectToPeer(peer, torrent, pieces)
+            connectToPeer(peer, torrent, pieces, CLIENT_PORT)
         )
     } catch (error) {
         console.error('Download error:', error.message);
     }
 }
 
-function connectToPeer(peer, torrent, requestedPieces){
+function connectToPeer(peer, torrent, requestedPieces, clientPort){
     // create a new socket for connection
     const socket = net.Socket();
     const requestQueue = {choked: true, requestQueue: []};
+
+    // initiate port validation
+    if(clientPort <= 0 || clientPort >= 65536) {
+        console.error(`Invalid client port: ${clientPort}. Assign default port 6881`);
+        clientPort = 6881; // fallback to default
+    }
 
     socket.on('error', err => 
         console.error(`Peer ${peer.ip}:${peer.port} error:`, err.message)
@@ -49,7 +56,7 @@ function setupMessageHandler(socket, requestedPieces, requestQueue){
 
     function processBuffer(){
         try {
-            const length = handhsake ? buffer[0] + 49 : buffer.readUInt32BE(0) + 4;
+            const length = handshake ? buffer[0] + 49 : buffer.readUInt32BE(0) + 4;
 
             if(buffer.length >= length) {
                 const message = buffer.subarray(0, length);
