@@ -1,122 +1,173 @@
 import { Buffer } from 'buffer';
-import TorrentParser from './TorrentParser';
-import { generateId } from './util';
+import { getInfoHash } from './TorrentParser';
+import { generatePeerId } from './util.js';
 
-export const buildHandshake = torrent => {
-    const buf = Buffer.alloc(68);
+export function buildHandshake (torrent){
+    const buffer = Buffer.alloc(68);
+
     // protocol string length (pstrlen)
-    buf.writeUInt8(19, 0);
+    buffer.writeUInt8(19, 0);
+
     // protocol string (pstr)
-    buf.write('BitTorrent protocol', 1);
+    buffer.write('BitTorrent protocol', 1);
+
     // reserved bytes (reserved)
-    buf.writeUInt32BE(0, 20);
-    buf.writeUInt32BE(0, 24);
+    buffer.writeUInt32BE(0, 20);
+    buffer.writeUInt32BE(0, 24);
+
     // info hash (info_hash)
-    TorrentParser.getInfoHash(torrent).copy(buf, 28);
-    // peer id (peer_id)
-    buf.write(generateId());
-    return buf;
+    getInfoHash(torrent).copy(buffer, 28);
+
+    // generate peer id (peer_id)
+    generatePeerId().copy(buffer, 48);
+    return buffer;
 }
-export const buildKeepAlive = () => Buffer.alloc(4);
-export const buildChoke = () => {
-    const buf = Buffer.alloc(5);
-    // length prefix
-    buf.writeUInt32BE(1, 0);
-    // message id
-    buf.writeUInt8(0, 4);
-    return buf;
+
+export function buildKeepAlive () {
+    return Buffer.alloc(4);
 }
-export const buildUnchoke = () => {
-    const buf = Buffer.alloc(5);
+
+export function buildChoke () {
+    const buffer = Buffer.alloc(5);
+
     // length prefix
-    buf.writeUInt32BE(1, 0);
+    buffer.writeUInt32BE(1, 0);
+
     // message id
-    buf.writeUInt8(2, 4);
-    return buf;
+    buffer.writeUInt8(0, 4);
+    return buffer;
+}
+
+export function buildUnchoke () {
+    const buffer = Buffer.alloc(5);
+
+    // length prefix
+    buffer.writeUInt32BE(1, 0);
+
+    // message id
+    buffer.writeUInt8(2, 4);
+    return buffer;
 };
-export const buildInterested = () => {
-    const buf = Buffer.alloc(5);
+
+export function buildInterested () {
+    const buffer = Buffer.alloc(5);
+
     // length prefix
-    buf.writeUInt32BE(1, 0);
+    buffer.writeUInt32BE(1, 0);
+
     // message id
-    buf.writeUInt8(3, 4);
-    return buf;
-}
-export const buildHave = payload => {
-    const buf = Buffer.alloc(9);
+    buffer.writeUInt8(3, 4);
+    return buffer;
+};
+
+export function buildHave (payload) {
+    const buffer = Buffer.alloc(9);
+
     // length prefix
-    buf.writeUInt32BE(5, 0);
+    buffer.writeUInt32BE(5, 0);
+
     // message id
-    buf.writeUInt8(4, 4);
+    buffer.writeUInt8(4, 4);
+
     // piece index
-    buf.writeUInt32BE(payload, 5);
-    return buf;
-}
-export const buildBitField = bitfield => {
-    const buf = Buffer.alloc(14);
+    buffer.writeUInt32BE(payload, 5);
+    return buffer;
+};
+
+export function buildBitField (bitfield) {
+    const buffer = Buffer.alloc(14);
+
     // length prefix
-    buf.writeUInt32BE(payload.length + 1, 0);
+    buffer.writeUInt32BE(payload.length + 1, 0);
+
     // message id
-    buf.writeUInt8(5, 4);
+    buffer.writeUInt8(5, 4);
+
     // bitfield
-    bitfield.copy(buf, 5);
-    return buf;
-}
-export const buildRequest = payload => {
-    const buf = Buffer.alloc(13);
-    // length prefix
-    buf.writeUInt32BE(13, 0);
-    // message id
-    buf.writeUInt8(6, 4);
-    // index
-    buf.writeUInt32BE(payload.index, 5);
-    // begin
-    buf.writeUInt32BE(payload.begin, 9);
-    // length
-    buf.writeUInt32BE(payload.length, 13);
-    return buf;
+    bitfield.copy(buffer, 5);
+    return buffer;
 };
-export const buildPiece = payload => {
-    const buf = Buffer.alloc(payload.block.length + 13);
+
+export function buildRequest (payload) {
+    const buffer = Buffer.alloc(13);
+
     // length prefix
-    buf.writeUInt32BE(payload.block.length + 9, 0);
+    buffer.writeUInt32BE(13, 0);
+
     // message id
-    buf.writeUInt8(7, 4);
+    buffer.writeUInt8(6, 4);
+
     // index
-    buf.writeUInt32BE(payload.index, 5);
+    buffer.writeUInt32BE(payload.index, 5);
+
     // begin
-    buf.writeUInt32BE(payload.begin, 9);
+    buffer.writeUInt32BE(payload.begin, 9);
+
+    // length
+    buffer.writeUInt32BE(payload.length, 13);
+    return buffer;
+};
+
+export function buildPiece (payload) {
+    const buffer = Buffer.alloc(payload.block.length + 13);
+
+    // length prefix
+    buffer.writeUInt32BE(payload.block.length + 9, 0);
+
+    // message id
+    buffer.writeUInt8(7, 4);
+
+    // index
+    buffer.writeUInt32BE(payload.index, 5);
+
+    // begin
+    buffer.writeUInt32BE(payload.begin, 9);
+
     // block
-    payload.block.copy(buf, 13);
-    return buf;
+    payload.block.copy(buffer, 13);
+    return buffer;
 };
-export const buildCancel = payload => {
-    const buf = Buffer.alloc(17);
+
+export function buildCancel (payload) {
+    const buffer = Buffer.alloc(17);
+
     // length prefix
-    buf.writeUInt32BE(13, 0);
+    buffer.writeUInt32BE(13, 0);
+
     // message id
-    buf.writeUInt8(8, 4);
+    buffer.writeUInt8(8, 4);
+
     // index
-    buf.writeUInt32BE(payload.index, 5);
+    buffer.writeUInt32BE(payload.index, 5);
+
     // begin
-    buf.writeUInt32BE(payload.begin, 9);
+    buffer.writeUInt32BE(payload.begin, 9);
+
     // length
-    buf.writeUInt32BE(payload.length, 13);
-    return buf;
+    buffer.writeUInt32BE(payload.length, 13);
+    return buffer;
 };
-export const buildPort = payload => {
-    const buf = Buffer.alloc(7);
+
+export function buildPort (payload) {
+    const buffer = Buffer.alloc(7);
+
     // length prefix
-    buf.writeUInt32BE(3, 0);
+    buffer.writeUInt32BE(3, 0);
+
     // message id
-    buf.writeUInt8(9, 4);
+    buffer.writeUInt8(9, 4);
+
     // listen port
-    buf.writeUInt16BE(payload, 5);
-    return buf;
+    buffer.writeUInt16BE(payload, 5);
+    return buffer;
 };
-export const parse = msg => {
-    const id = msg.length > 4 ? msg.readInt8(4) : null;
-    let payload = msg.length > 5 ? msg.slice(5) : null;
+
+export function parseMessage (message) {
+    const length = message.readInt32BE(0);
+
+    const id = length > 0 ? message.readInt8(4) : null;
+    const payload = length > 0 ? message.subarray(5) : null;
+
     if(id === 6 || id === 7 || id === 8){
         const rest = payload.slice(8);
         payload = {
@@ -125,8 +176,9 @@ export const parse = msg => {
         };
         payload[id === 7 ? 'block' : 'length'] = rest;
     }
+
     return {
-        size: msg.readInt32BE(0),
+        length,
         id,
         payload
     }
