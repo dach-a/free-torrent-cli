@@ -1,7 +1,13 @@
-import { getPeers } from './src/tracker.js';
-import { torrent } from './src/download.js';
-import TorrentParser from './src/TorrentParser.js';
+import { open } from './src/TorrentParser.js';
+import downloadTorrent from './src/download.js';
 
-
-const torrent = TorrentParser.open(process.argv[2]);
-Download(torrent)
+async function main() {
+    try {
+        const torrent = await open(process.argv[2]);
+        downloadTorrent(torrent);
+    } catch (error) {
+        console.error('Error:', error.message);
+        process.exit(1);
+    }
+}
+main();
