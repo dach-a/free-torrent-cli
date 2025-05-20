@@ -1,8 +1,8 @@
 import crypto from 'crypto';
 
-let id = null;
+const id = null;
 
-export const generatePeerId = () => {
+export function generatePeerId() {
     if(!id) {
         id = crypto.randomBytes(20);
         Buffer.from('-TR2930-').copy(id, 0);

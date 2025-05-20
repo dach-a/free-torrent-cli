@@ -1,5 +1,5 @@
 import { Buffer } from 'buffer';
-import { getInfoHash } from './TorrentParser';
+import { getInfoHash } from './TorrentParser.js';
 import { generatePeerId } from './util.js';
 
 export function buildHandshake (torrent){
