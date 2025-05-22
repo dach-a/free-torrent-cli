@@ -3,15 +3,19 @@ import { getPeers, buildAnnounceReq } from './tracker.js';
 import { buildHandshake, buildInterested, buildRequest, parseMessage } from './Message.js';
 import Pieces from './Pieces.js';
 
-export default async function download(torrent){
+export default async function downloadTorrent(torrent){
     try {
+        const CLIENT_PORT = 6881;
         // get peers from tracker
-        const peers = await new Promise((resolve, reject) => getPeers(torrent, CLIENT_PORT, (peers, err) => err ?  reject(err) : resolve(peers)));
+        const peers = await new Promise((resolve, reject) => 
+            getPeers(torrent, CLIENT_PORT, (peers, err) => 
+                err ?  reject(err) : resolve(peers)
+            )
+        );
 
         // get the message pieces from torrent
         const pieces = new Pieces(torrent.info.pieces.length / 20);
         const MAX_CONCURRENT_CONNECTIONS = 5;
-        let CLIENT_PORT = 6881;
 
         // create connection pool
         peers.slice(0, MAX_CONCURRENT_CONNECTIONS).forEach(peer => 

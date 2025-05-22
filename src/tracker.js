@@ -8,6 +8,11 @@ import { generatePeerId } from './util.js';
 export function getPeers (torrent, clientPort, callback) {
     const socket = dgram.createSocket('udp4');
     const url = torrent.announce.toString('utf8');
+    
+    // validate client port
+    if(typeof clientPort !== 'number'){
+        return callback([], new Error('Missing client port'));
+    }
 
     // send a connect request
     udpSend(socket, buildConnReq(), url);
@@ -68,9 +73,10 @@ export function parseConnResp (resp) {
 
 export function buildAnnounceReq (connId, torrent, port=6881) {
     // initiate port validation
+    console.log(`Client port: ${port}`);
     if(typeof port !== 'number' || port <= 0 || port >= 65536) {
-        throw new Error(`Invalid client port assigned: ${port}. Switching to default port 6881`);
         port = 6881; // fallback to default
+        throw new Error(`Invalid client port assigned: ${port}. Switching to default port 6881`);
     }
 
     const buffer = Buffer.allocUnsafe(98);
@@ -130,12 +136,9 @@ export function parseAnnounceResp (resp) {
         seeders: resp.readUInt32BE(12),
         peers: group(resp.slice(20), 6).map(address => {
             if(!address || address.length < 6) return null; // skip invalid peer
+            const ip = address.slice(0, 4).join('.');
             const port = address.readUInt16BE(4);
-            if(port <= 0 || port >= 65536) return null; // skip invalid peer
-            return {
-                ip: address.slice(0, 4).join('.'),
-                port: port
-            }
+            return port > 0 && port < 65536 ? { ip, port } : null;
         }).filter(Boolean) // remove invalid peers
     }
 }
